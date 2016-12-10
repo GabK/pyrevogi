@@ -1,5 +1,5 @@
 from bluetooth.ble import GATTRequester
-import time
+import logging
 
 #
 # Commands
@@ -45,8 +45,6 @@ class Bulb(object):
         # FIXME: First call doesn't actually do anything?
         self.send(BULB_CONFIG, READ)
         self.send(BULB_CONFIG, READ)
-        #time.sleep(5)
-        #self.send(BULB_NAME)
 
     def send(self, handle, command = None):
         if handle == BULB_NAME:
@@ -57,16 +55,21 @@ class Bulb(object):
             if command == WRITE:
                 payload += list(self.color) + [self.brightness, 0x00, 0x00, 0x00, 0x00]
 
-            #print payload[2:]
             checksum = (sum(payload[2:]) + 1) & 0xFF
             payload += [0x00, 0x00, checksum, 0xff, 0xff]
-            #print payload
+            "The sum of 1 + 2 is {0}".format(1 + 2)
+
+            logging.debug("Sending {0} to handle {1}", [hex(i) for i in payload], hex(handle))
+
             self._requester.write_by_handle(handle, str(bytearray(payload)))
 
     def on_notification(self, handle, data):
         response = [int(b.encode("hex"), 16) for b in data]
-        self.color = (response[7], response[8], response[9])
-        self.brightness = response[10]
+
+        # Parse notification for READ command
+        if len(response) == 21:
+            self.color = (response[7], response[8], response[9])
+            self.brightness = response[10]
 
     def is_on(self):
         return self.brightness != STATUS_OFF and self.brightness != MIN_BRIGHTNESS
