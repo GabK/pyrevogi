@@ -69,7 +69,7 @@ class Bulb(object):
         self.brightness = response[10]
 
     def is_on(self):
-        return self.brightness == STATUS_OFF
+        return self.brightness == STATUS_ON or self.brightness != MIN_BRIGHTNESS
 
     def on(self):
         self.brightness = STATUS_ON
