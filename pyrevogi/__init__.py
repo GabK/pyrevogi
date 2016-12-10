@@ -45,8 +45,8 @@ class Bulb(object):
         # FIXME: First call doesn't actually do anything?
         self.send(BULB_CONFIG, READ)
         self.send(BULB_CONFIG, READ)
-        time.sleep(5)
-        self.send(BULB_NAME)
+        #time.sleep(5)
+        #self.send(BULB_NAME)
 
     def send(self, handle, command = None):
         if handle == BULB_NAME:
@@ -57,7 +57,7 @@ class Bulb(object):
             if command == WRITE:
                 payload += list(self.color) + [self.brightness, 0x00, 0x00, 0x00, 0x00]
 
-            print payload[2:]
+            #print payload[2:]
             checksum = (sum(payload[2:]) + 1) & 0xFF
             payload += [0x00, 0x00, checksum, 0xff, 0xff]
             #print payload
