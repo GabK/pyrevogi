@@ -52,8 +52,7 @@ class Bulb(object):
 
             checksum = (sum(payload[2:]) + 1) & 0xFF
             payload += [0x00, 0x00, checksum, 0xff, 0xff]
-            "The sum of 1 + 2 is {0}".format(1 + 2)
-
+            
             logging.debug("Sending {0} to handle {1}", [hex(i) for i in payload], hex(command[0]))
 
             self._requester.write_by_handle(command[0], str(bytearray(payload)))
