@@ -50,9 +50,9 @@ class Bulb(object):
     @state.setter
     def state(self, value):
         if value:
-            self.brightness = self.STATUS_ON
+            self._brightness = self.STATUS_ON
         else:
-            self.brightness = self.STATUS_OFF
+            self._brightness = self.STATUS_OFF
         self._send_command(self.SET_CONFIG)
 
     @property
@@ -109,7 +109,7 @@ class Bulb(object):
             payload = [0x0f, command[1], command[2], 0x00]
 
             if command == self.SET_CONFIG:
-                payload += list(self.color) + [self.brightness, 0x00, 0x00, 0x00, 0x00]
+                payload += [self.red, self.green, self.blue, self.brightness, 0x00, 0x00, 0x00, 0x00]
 
             checksum = (sum(payload[2:]) + 1) & 0xFF
             payload += [0x00, 0x00, checksum, 0xff, 0xff]
