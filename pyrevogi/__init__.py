@@ -31,17 +31,78 @@ class Bulb(object):
     _requester = None
 
     name = None
-    color = (MAX_RED, MAX_GREEN, MAX_BLUE)
-    brightness = MIN_BRIGHTNESS
+    _red = MAX_RED
+    _green = MAX_GREEN
+    _blue = MAX_BLUE
+    _brightness = MIN_BRIGHTNESS
 
     def __init__(self, address):
         self._requester = GATTRequester(address)
         self._requester.on_notification = self.on_notification
         # FIXME: First call doesn't actually do anything?
-        self.send(self.GET_CONFIG)
-        self.send(self.GET_CONFIG)
+        self._send_command(self.GET_CONFIG)
+        self._send_command(self.GET_CONFIG)
 
-    def send(self, command):
+    @property
+    def state(self):
+        return self.brightness != self.STATUS_OFF and self.brightness != self.MIN_BRIGHTNESS
+
+    @state.setter
+    def state(self, value):
+        if value:
+            self.brightness = self.STATUS_ON
+        else:
+            self.brightness = self.STATUS_OFF
+        self._send_command(self.SET_CONFIG)
+
+    @property
+    def color(self):
+        return (self._red, self._green, self._blue)
+
+    @color.setter
+    def color(self, value):
+        self.red = value[0]
+        self.green = value[1]
+        self.blue = value[2]
+        self._send_command(self.SET_CONFIG)
+
+    @property
+    def red(self):
+        return self._red
+
+    @red.setter
+    def red(self, value):
+        self._red = max(min(value, self.MAX_RED), self.MIN_RED)
+        self._send_command(self.SET_CONFIG)
+
+    @property
+    def green(self):
+        return self._green
+
+    @green.setter
+    def green(self, value):
+        self._green = max(min(value, self.MAX_GREEN), self.MIN_GREEN)
+        self._send_command(self.SET_CONFIG)
+
+    @property
+    def blue(self):
+        return self._blue
+
+    @blue.setter
+    def blue(self, value):
+        self._blue = max(min(value, self.MAX_BLUE), self.MIN_BLUE)
+        self._send_command(self.SET_CONFIG)
+
+    @property
+    def brightness(self):
+        return self._brightness
+
+    @brightness.setter
+    def brightness(self, value):
+        self._brightness = max(min(value, self.MAX_BRIGHTNESS), self.MIN_BRIGHTNESS)
+        self._send_command(self.SET_CONFIG)
+
+    def _send_command(self, command):
         if command == self.GET_NAME:
             self.name = self._requester.read_by_handle(command[0])[0]
         else:
@@ -62,21 +123,8 @@ class Bulb(object):
 
         # Parse notification for READ command
         if len(response) == 21:
-            self.color = (response[7], response[8], response[9])
-            self.brightness = response[10]
-
-    def is_on(self):
-        return self.brightness != self.STATUS_OFF and self.brightness != self.MIN_BRIGHTNESS
-
-    def on(self):
-        self.brightness = self.STATUS_ON
-
-    def off(self):
-        self.brightness = self.STATUS_OFF
-
-    def set(self, red = MAX_RED, green = MAX_GREEN, blue = MAX_BLUE, brightness = MAX_BRIGHTNESS):
-        self.color = (max(min(red, self.MAX_RED), self.MIN_RED), max(min(green, self.MAX_GREEN), self.MIN_GREEN), max(min(blue, self.MAX_BLUE), self.MIN_BLUE))
-        self.brightness = max(min(brightness, self.MAX_BRIGHTNESS), self.MIN_BRIGHTNESS)
+            self._color = (response[7], response[8], response[9])
+            self._brightness = response[10]
 
     def disconnect(self):
         self._requester.disconnect()
