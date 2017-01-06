@@ -59,10 +59,15 @@ class Bulb(object):
 
     @property
     def color(self):
-        return (self._red, self._green, self._blue)
+        return "#{0}{1}{2}".format(hex(self._red), hex(self._green), hex(self._blue))
 
     @color.setter
     def color(self, value):
+        if value.startswith('#'):
+            value = value[1:]
+
+        value = (int(value[0:2], 16), int(value[2:4], 16), int(value[4:6], 16))
+
         if self.red != value[0] or self.green != value or self.blue != value:
             self._red = max(min(value[0], self.MAX_RED), self.MIN_RED)
             self._green = max(min(value[1], self.MAX_GREEN), self.MIN_GREEN)
