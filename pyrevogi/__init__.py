@@ -61,9 +61,9 @@ class Bulb(object):
 
     @color.setter
     def color(self, value):
-        self.red = value[0]
-        self.green = value[1]
-        self.blue = value[2]
+        self._red = max(min(value[0], self.MAX_RED), self.MIN_RED)
+        self._green = max(min(value[1], self.MAX_GREEN), self.MIN_GREEN)
+        self.blue = self._blue = max(min(value[2], self.MAX_BLUE), self.MIN_BLUE)
         self._send_command(self.SET_CONFIG)
 
     @property
@@ -123,7 +123,9 @@ class Bulb(object):
 
         # Parse notification for READ command
         if len(response) == 21:
-            self._color = (response[7], response[8], response[9])
+            self._red = response[7]
+            self._green = response[8]
+            self._blue = response[9]
             self._brightness = response[10]
 
     def disconnect(self):
