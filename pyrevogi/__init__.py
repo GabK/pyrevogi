@@ -59,7 +59,7 @@ class Bulb(object):
 
     @property
     def color(self):
-        return "#{0}{1}{2}".format(hex(self._red), hex(self._green), hex(self._blue))
+        return "#{0}{1}{2}".format(format(self._red, 'x'), format(self._green, 'x'), format(self._blue, 'x'))
 
     @color.setter
     def color(self, value):
