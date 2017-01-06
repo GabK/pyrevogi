@@ -1,3 +1,5 @@
+from threading import Lock
+
 from bluetooth.ble import GATTRequester
 import logging
 
@@ -29,6 +31,7 @@ class Bulb(object):
     STATUS_ON = 0xfe
 
     _requester = None
+    _lock = Lock()
 
     name = None
     _red = MAX_RED
@@ -37,10 +40,8 @@ class Bulb(object):
     _brightness = MIN_BRIGHTNESS
 
     def __init__(self, address):
-        self._requester = GATTRequester(address)
+        self._requester = GATTRequester(address, False)
         self._requester.on_notification = self.on_notification
-        # FIXME: First call doesn't actually do anything?
-        self._send_command(self.GET_CONFIG)
         self._send_command(self.GET_CONFIG)
 
     @property
@@ -49,11 +50,12 @@ class Bulb(object):
 
     @state.setter
     def state(self, value):
-        if value:
-            self._brightness = self.STATUS_ON
-        else:
-            self._brightness = self.STATUS_OFF
-        self._send_command(self.SET_CONFIG)
+        if self.state != value:
+            if value:
+                self._brightness = self.STATUS_ON
+            else:
+                self._brightness = self.STATUS_OFF
+            self._send_command(self.SET_CONFIG)
 
     @property
     def color(self):
@@ -61,10 +63,11 @@ class Bulb(object):
 
     @color.setter
     def color(self, value):
-        self._red = max(min(value[0], self.MAX_RED), self.MIN_RED)
-        self._green = max(min(value[1], self.MAX_GREEN), self.MIN_GREEN)
-        self.blue = self._blue = max(min(value[2], self.MAX_BLUE), self.MIN_BLUE)
-        self._send_command(self.SET_CONFIG)
+        if self.red != value[0] or self.green != value or self.blue != value:
+            self._red = max(min(value[0], self.MAX_RED), self.MIN_RED)
+            self._green = max(min(value[1], self.MAX_GREEN), self.MIN_GREEN)
+            self._blue = max(min(value[2], self.MAX_BLUE), self.MIN_BLUE)
+            self._send_command(self.SET_CONFIG)
 
     @property
     def red(self):
@@ -72,8 +75,9 @@ class Bulb(object):
 
     @red.setter
     def red(self, value):
-        self._red = max(min(value, self.MAX_RED), self.MIN_RED)
-        self._send_command(self.SET_CONFIG)
+        if self.red != value:
+            self._red = max(min(value, self.MAX_RED), self.MIN_RED)
+            self._send_command(self.SET_CONFIG)
 
     @property
     def green(self):
@@ -81,8 +85,9 @@ class Bulb(object):
 
     @green.setter
     def green(self, value):
-        self._green = max(min(value, self.MAX_GREEN), self.MIN_GREEN)
-        self._send_command(self.SET_CONFIG)
+        if self.green != value:
+            self._green = max(min(value, self.MAX_GREEN), self.MIN_GREEN)
+            self._send_command(self.SET_CONFIG)
 
     @property
     def blue(self):
@@ -90,8 +95,9 @@ class Bulb(object):
 
     @blue.setter
     def blue(self, value):
-        self._blue = max(min(value, self.MAX_BLUE), self.MIN_BLUE)
-        self._send_command(self.SET_CONFIG)
+        if self.blue != value:
+            self._blue = max(min(value, self.MAX_BLUE), self.MIN_BLUE)
+            self._send_command(self.SET_CONFIG)
 
     @property
     def brightness(self):
@@ -99,10 +105,13 @@ class Bulb(object):
 
     @brightness.setter
     def brightness(self, value):
-        self._brightness = max(min(value, self.MAX_BRIGHTNESS), self.MIN_BRIGHTNESS)
-        self._send_command(self.SET_CONFIG)
+        if self.brightness != value:
+            self._brightness = max(min(value, self.MAX_BRIGHTNESS), self.MIN_BRIGHTNESS)
+            self._send_command(self.SET_CONFIG)
 
     def _send_command(self, command):
+        self.connect()
+
         if command == self.GET_NAME:
             self.name = self._requester.read_by_handle(command[0])[0]
         else:
@@ -127,6 +136,13 @@ class Bulb(object):
             self._green = response[8]
             self._blue = response[9]
             self._brightness = response[10]
+
+        self.disconnect()
+        self._lock.release()
+
+    def connect(self):
+        self._lock.acquire()
+        self._requester.connect()
 
     def disconnect(self):
         self._requester.disconnect()
